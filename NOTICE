@@ -1,0 +1,21 @@
+wayland-java-cm
+Copyright 2026 rrtt217
+
+This product includes software developed by the wayland-java project
+(https://github.com/Ramblurr/wayland-java), Copyright 2015 Erik De Rijcke and
+Copyright 2024 Casey Link, licensed under the Apache License, Version 2.0.
+
+  The wayland-java code redistributed here is MODIFIED with respect to
+  upstream: the jextract bindings are regenerated with a reduced symbol set,
+  the generated protocol stubs are pruned to the reachable set, and
+  LibWayland.java resolves the versioned libwayland-client soname. See
+  THIRD_PARTY_NOTICES.md and vendor/README.md.
+
+This product includes protocol bindings generated from wayland-protocols
+(https://gitlab.freedesktop.org/wayland/wayland-protocols), Copyright 2019
+Sebastian Wick, Copyright 2019 Erwin Burema, Copyright 2020 AMD, Copyright
+2020-2024 Collabora Ltd., Copyright 2024 Xaver Hugl and Copyright 2022-2025
+Red Hat Inc., licensed under the MIT license.
+
+This product includes the SLF4J API (https://www.slf4j.org/), Copyright
+2004-2025 QOS.ch, licensed under the MIT license.

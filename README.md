@@ -145,3 +145,15 @@ pair it with `proguard-core` 9.4.0. An older core reports a misleading
 
 If the compositor lacks the protocol, or the platform is not Wayland, the app
 reports why and renders SDR instead of failing.
+
+## License
+
+**Apache License 2.0** — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+The vendored tree is predominantly Apache-2.0 (wayland-java, jsr305) with MIT
+parts (SLF4J, and the bindings generated from wayland-protocols), so the
+`wayland-lite` artifact is Apache-2.0. Full third-party license texts are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `vendor/licenses/`.
+
+This does not restrict reuse: Apache-2.0 code can be consumed by MIT, BSD, GPL
+and proprietary projects alike, and it carries an explicit patent grant.
