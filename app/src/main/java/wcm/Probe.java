@@ -6,6 +6,7 @@ import org.freedesktop.wayland.client.WlRegistryEvents;
 import org.freedesktop.wayland.client.WlRegistryProxy;
 import org.freedesktop.wayland.client.WpColorManagerV1EventsV2;
 import org.freedesktop.wayland.client.WpColorManagerV1Proxy;
+import org.freedesktop.wayland.shared.WpColorManagerV1Feature;
 import org.freedesktop.wayland.client.WlSurfaceProxy;
 
 import java.lang.foreign.MemorySegment;
@@ -76,6 +77,9 @@ public final class Probe {
         }
         System.out.println("step 3: done=" + done[0] + " cm=" + (cm[0] != null));
         System.out.printf("features=%s%n", features);
+        System.out.printf("feature names=%s%n", features.stream()
+                .map(f -> { var e = WpColorManagerV1Feature.of(f); return e == null ? String.valueOf(f) : e.name(); })
+                .toList());
         System.out.printf("tfs=%s%n", tfs);
         System.out.printf("primaries=%s%n", prims);
         if (useSdl) {

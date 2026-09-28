@@ -1,17 +1,18 @@
-# Gradle caches and build output (regenerable, hundreds of MB)
+# Gradle caches and build output (regenerable)
 .gradle/
 .gradle-home/
 build/
 classes/
 out/
 
+# scratch: protocol regeneration, ProGuard toolchain, extracted JDK modules
+.regengen/
+vendor/tools/
+
 # JVM crash dumps from the FFM experiments
 core.*
 hs_err_pid*.log
 replay_pid*.log
-
-# scratch: ProGuard toolchain + JDK modules extracted for -libraryjars
-vendor/tools/
 
 # editors
 .idea/

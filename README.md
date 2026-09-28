@@ -67,7 +67,7 @@ manager.
 | | upstream | vendored |
 |---|---|---|
 | jextract binding | 1449 classes / 1.6 MB | **11 source files** |
-| protocol stubs | 188 files / 1.3 MB | **36 source files** |
+| protocol stubs | 188 files / 1.3 MB | **79 source files** |
 | runtime sources | 3 published modules | **26 source files** |
 | build needs | jextract, Gradle, pkg-config, `wayland-protocols` | **a JDK and two Maven jars** |
 

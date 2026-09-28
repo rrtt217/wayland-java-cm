@@ -13,6 +13,7 @@ import org.freedesktop.wayland.client.WpImageDescriptionCreatorParamsV1Events;
 import org.freedesktop.wayland.client.WpImageDescriptionCreatorParamsV1Proxy;
 import org.freedesktop.wayland.client.WpImageDescriptionV1EventsV2;
 import org.freedesktop.wayland.client.WpImageDescriptionV1Proxy;
+import org.freedesktop.wayland.shared.WpColorManagerV1Feature;
 import org.freedesktop.wayland.shared.WpColorManagerV1Primaries;
 import org.freedesktop.wayland.shared.WpColorManagerV1RenderIntent;
 import org.freedesktop.wayland.shared.WpColorManagerV1TransferFunction;
@@ -244,7 +245,7 @@ public final class ColorManagement implements AutoCloseable {
 
         WpImageDescriptionV1Proxy descLocal;
         if (mode == Mode.SCRGB) {
-            if (!supportsFeature(7 /* WINDOWS_SCRGB */)) {
+            if (!supportsFeature(WpColorManagerV1Feature.WINDOWS_SCRGB.getValue())) {
                 message = "compositor lacks the windows_scrgb feature";
                 return UNSUPPORTED;
             }

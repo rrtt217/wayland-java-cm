@@ -7,7 +7,7 @@ Everything here is **source**. No jextract, no annotation processor, no
 vendor/
   wayland-lite/       the library subproject — this is what you depend on
   slim/src/           11 .java  jextract output for libwayland + 6 libc calls
-  gen-src/            36 .java  protocol stubs: wayland.xml + color-management-v1
+  gen-src/            79 .java  protocol stubs: wayland.xml + color-management-v1
   wayland-java-src/   26 .java  the wayland-java runtime sources actually used
   licenses/           third-party license texts
   prune.py            recomputes the reachable set for gen-src
@@ -20,7 +20,7 @@ vendor/
 ```
 $ ./gradlew vendorSummary
   jextract binding : 11 source files (upstream: 145)
-  protocol stubs   : 36 source files (188 generated, pruned to the reachable set)
+  protocol stubs   : 79 source files (188 generated, pruned to the reachable set)
   wayland-java src : 26 source files
   local jars       : 0 (0 = everything is source or Maven)
 ```
@@ -73,9 +73,16 @@ Two reductions make the vendored tree small:
 - **Only 23 Wayland functions are called.** `javap` over wayland-java's runtime
   jars yields the full set, so jextract runs with an `--include-function`
   allow-list: 145 classes / 1.6 MB → 11 source files.
-- **152 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
+- **109 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
   the closure from the app plus the runtime sources and drops the rest (data
-  device, input, shm, shell, subcompositor, …).
+  device, input, shm, shell, subcompositor, …). It runs in place and owns the
+  state of `gen-src`; run it after re-running the annotation processor.
+
+  Enums are treated as **protocol vocabulary** and kept even when nothing
+  references them: a static reference closure sees `WpColorManagerV1Feature` as
+  dead code and deletes it the moment the app passes a literal `7` instead of
+  `WINDOWS_SCRGB`, which makes `supported_feature` impossible to interpret. The
+  rule is "keep every enum whose protocol still has a surviving proxy class".
 
 Note that the `C` / `C_1` split upstream's jextract output needs is gone: it
 existed only to satisfy a reference in the *precompiled* stub jar. The vendored
@@ -104,7 +111,9 @@ back, so it works with only the runtime package installed.
   script also re-applies the soname fix, with an assertion so a change in
   jextract's output fails loudly).
 - `vendor/gen-src` — re-run the annotation processor from the `wayland-java`
-  submodule, then `python3 vendor/prune.py`.
+  submodule (a throwaway project with a `@WaylandCustomProtocol` package-info for
+  `wayland.xml` and `staging/color-management/color-management-v1.xml`), copy the
+  generated tree in, then `python3 vendor/prune.py`.
 - `vendor/wayland-java-src` — copy `stubs-shared/src/main/java` and
   `stubs-client/src/main/java` from the submodule.
 
