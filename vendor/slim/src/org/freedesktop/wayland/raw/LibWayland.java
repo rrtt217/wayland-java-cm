@@ -20,31 +20,21 @@ public class LibWayland extends LibWayland$shared {
 
     static final Arena LIBRARY_ARENA = Arena.ofAuto();
 
-    /**
-     * Load libwayland-client, preferring the real SONAME.
-     *
-     * Upstream jextract emits SymbolLookup.libraryLookup(System.mapLibraryName(
-     * "wayland-client"), ...) which asks dlopen() for "libwayland-client.so" --
-     * the UNVERSIONED name. That symlink ships in the -devel package, so it
-     * exists on build machines but not on end-user machines, and dlopen() has no
-     * soname fallback: it needs an exact filename match. Asking for
-     * "libwayland-client.so.0" instead works with only the runtime package.
-     */
+    static final SymbolLookup SYMBOL_LOOKUP = loadWaylandClient()
+            .or(SymbolLookup.loaderLookup())
+            .or(Linker.nativeLinker().defaultLookup());
+
+
+
     private static SymbolLookup loadWaylandClient() {
         for (final String name : new String[] { "libwayland-client.so.0", "libwayland-client.so" }) {
             try {
                 return SymbolLookup.libraryLookup(name, LIBRARY_ARENA);
             } catch (final Throwable ignored) {
-                // try the next candidate
             }
         }
-        throw new IllegalStateException("cannot load libwayland-client (tried .so.0 and .so)");
+        throw new IllegalStateException("cannot load libwayland-client");
     }
-
-    static final SymbolLookup SYMBOL_LOOKUP = loadWaylandClient()
-            .or(SymbolLookup.loaderLookup())
-            .or(Linker.nativeLinker().defaultLookup());
-
 
     private static class wl_event_queue_destroy {
         public static final FunctionDescriptor DESC = FunctionDescriptor.ofVoid(

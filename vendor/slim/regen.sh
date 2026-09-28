@@ -7,11 +7,8 @@
 #
 # Requires: jextract 25 on PATH (see ../../BUILD_java_env.md).
 #
-# Why three passes instead of one:
-#   Unfiltered jextract emits so much that it auto-splits into C extends C_1.
-#   With --include-function filters it emits a single C, so the name C_1 that
-#   stubs-shared references (C_1.fcntl, the variadic invoker) would not exist.
-#   Generating C and C_1 as separate passes reproduces both class names.
+# Two passes: one for libwayland, one for the handful of libc calls the
+# vendored wayland-java sources use (they reference C.fcntl, C.mmap, ...).
 set -eu
 
 JX="${JX:-jextract}"
@@ -45,15 +42,11 @@ done
 "$JX" --output "$OUT" --target-package "$PKG" --header-class-name LibWayland \
     -l wayland-client "$@" /usr/include/wayland-client-core.h
 
-# ---- pass 2: the libc bits stubs-shared's shm path needs, called C ---------
+# ---- pass 2: the libc bits the vendored sources need, in class C ----------
 set --
-for f in close ftruncate mkstemp mmap munmap; do set -- "$@" --include-function "$f"; done
+for f in close ftruncate mkstemp mmap munmap fcntl; do set -- "$@" --include-function "$f"; done
 "$JX" --output "$OUT" --target-package "$PKG" --header-class-name C "$@" \
-    /usr/include/unistd.h /usr/include/sys/mman.h /usr/include/stdlib.h
-
-# ---- pass 3: fcntl, which must land in C_1 ---------------------------------
-"$JX" --output "$OUT" --target-package "$PKG" --header-class-name C_1 \
-    --include-function fcntl /usr/include/fcntl.h
+    /usr/include/unistd.h /usr/include/sys/mman.h /usr/include/stdlib.h /usr/include/fcntl.h
 
 echo "generated $(find "$OUT" -name '*.java' | wc -l) files in $OUT"
 

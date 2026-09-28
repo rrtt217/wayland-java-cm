@@ -24,7 +24,7 @@ Status: **working**, verified on KWin Plasma against `wp_color_manager_v1` v2 �
 Needs a **JDK 25 toolchain** (FFM) and `libwayland-client` at runtime.
 
 ```sh
-./gradlew -p app run --args="--mode hdr10 --10bit"
+./gradlew run --args="--mode hdr10 --10bit"
 ```
 
 No jextract, no annotation processor, no `pkg-config`, no network: the Wayland
@@ -55,7 +55,7 @@ Inside `app/`:
 | `wcm/Main.java` | window, render loop, runtime mode switching |
 | `wcm/GlPattern.java` | the test pattern and the sRGB / linear / PQ / gamma22 encodings |
 | `wcm/Sdl.java`, `wcm/Gl.java` | minimal FFM bindings for the SDL/GL calls used |
-| `wcm/Probe.java` | isolation tool used to pin two bugs down (`./gradlew -p app probe`) |
+| `wcm/Probe.java` | isolation tool used to pin two bugs down (`./gradlew probe`) |
 
 ## The vendored dependency
 
@@ -66,9 +66,10 @@ manager.
 
 | | upstream | vendored |
 |---|---|---|
-| jextract binding | 1449 classes / 1.6 MB | **44 classes / 60 KB** |
-| protocol stubs | 188 files / 1.3 MB | **36 files / 272 KB** |
-| build needs | jextract, Gradle, pkg-config, `wayland-protocols` | **a JDK** |
+| jextract binding | 1449 classes / 1.6 MB | **11 source files** |
+| protocol stubs | 188 files / 1.3 MB | **36 source files** |
+| runtime sources | 3 published modules | **26 source files** |
+| build needs | jextract, Gradle, pkg-config, `wayland-protocols` | **a JDK and two Maven jars** |
 
 Two things make this possible:
 
@@ -83,7 +84,11 @@ Two things make this possible:
 The result is consumed as an ordinary Gradle library:
 
 ```kotlin
-includeBuild(".../vendor/wayland-lite")
+// inside this repo
+dependencies { implementation(project(":vendor:wayland-lite")) }
+
+// from another project
+includeBuild(".../wayland-java-cm")
 dependencies { implementation("org.freedesktop.wayland:wayland-lite") }
 ```
 
@@ -157,3 +162,21 @@ parts (SLF4J, and the bindings generated from wayland-protocols), so the
 
 This does not restrict reuse: Apache-2.0 code can be consumed by MIT, BSD, GPL
 and proprietary projects alike, and it carries an explicit patent grant.
+
+## Build layout: Groovy root, Kotlin subprojects
+
+Gradle picks the DSL per script **file**, so a Groovy root and Kotlin
+subprojects coexist happily — the Groovy `allprojects`/`subprojects` blocks
+configure the `.kts` subprojects like any other:
+
+```
+settings.gradle            Groovy   includes :vendor:wayland-lite and :app
+build.gradle               Groovy   shared config + vendorSummary / verifyLicenses
+vendor/wayland-lite/build.gradle.kts  Kotlin
+app/build.gradle.kts                  Kotlin
+consumer/                             separate build, Kotlin
+```
+
+The one hard rule: a single directory must not contain **both** `build.gradle`
+and `build.gradle.kts` (or both settings variants). There is no error and no
+warning — Gradle silently uses the Groovy one and ignores the other.

@@ -330,5 +330,78 @@ public class C extends C$shared {
            throw new AssertionError("should not reach here", ex$);
         }
     }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * extern int fcntl(int __fd, int __cmd, ...)
+     * }
+     */
+    public static class fcntl {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                C.C_INT,
+                C.C_INT,
+                C.C_INT
+            );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("fcntl");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private fcntl(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * extern int fcntl(int __fd, int __cmd, ...)
+         * }
+         */
+        public static fcntl makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new fcntl(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public int apply(int __fd, int __cmd, Object... x2) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("fcntl", __fd, __cmd, x2);
+                }
+                return (int) spreader.invokeExact(__fd, __cmd, x2);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
 }
 

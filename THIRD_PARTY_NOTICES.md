@@ -1,48 +1,50 @@
 # Third-party notices
 
-This repository redistributes the components below. Full license texts are in
-`vendor/licenses/`.
+This repository redistributes third-party **source**. Nothing is vendored as a
+binary: `vendorSummary` reports `local jars: 0` for a clean tree.
 
 ## wayland-java — Apache License 2.0
 
-Redistributed in three forms:
+Redistributed in two forms:
 
 - as a **git submodule** (`wayland-java/`) pinned to our fork
-  <https://github.com/rrtt217/wayland-java>, which is `Ramblurr/wayland-java`
-  plus the two commits listed in the top-level README;
-- as **source** in `vendor/slim/src` (its jextract output, reduced to the
-  symbols actually used) and `vendor/gen-src` (its generated protocol stubs);
-- as **bytecode** in `vendor/libs/stubs-client.jar`, `vendor/libs/stubs-shared.jar`
-  and `vendor/libs/wayland-native.jar`.
+  <https://github.com/rrtt217/wayland-java>;
+- as **source**, under `vendor/`:
+  - `vendor/slim/src` — its jextract output, regenerated with a reduced symbol set;
+  - `vendor/gen-src` — its generated protocol stubs, pruned to the reachable set;
+  - `vendor/wayland-java-src/{shared,client}` — the runtime sources actually used.
 
 Upstream: <https://github.com/Ramblurr/wayland-java>
-Copyright © 2015 Erik De Rijcke; © 2024 Casey Link; portions © 2008–2012 the
-Wayland authors (the generated bindings carry the protocol's own copyright
-headers). Licensed under the Apache License, Version 2.0 — see
-`vendor/licenses/APACHE-2.0.txt`.
+Copyright © 2015 Erik De Rijcke; © 2024 Casey Link. Licensed under the Apache
+License, Version 2.0 — see [LICENSE](LICENSE).
 
-The vendored copies are **modified** relative to upstream: the generated
-bindings are regenerated with a reduced symbol set, the protocol stubs are
-pruned to the reachable set, and `LibWayland.java` prefers the versioned
-`libwayland-client.so.0` soname. See `vendor/README.md` and
+**These copies are modified** with respect to upstream, as required to be stated
+by Apache-2.0 §4(b): the jextract bindings are regenerated against an allow-list
+of 23 functions, the generated protocol stubs are pruned from 188 files to 36,
+and `LibWayland.java` resolves the versioned `libwayland-client.so.0` soname
+instead of the unversioned name. See [vendor/README.md](vendor/README.md) and
 `vendor/slim/regen.sh`.
 
-## jsr305 3.0.2 — Apache License 2.0
+## wayland-protocols — MIT License
 
-`vendor/libs/jsr305-3.0.2.jar`, from `com.google.code.findbugs:jsr305:3.0.2`.
-Only `javax.annotation.Nonnull` / `javax.annotation.Nullable` are used, and only
-at compile time — it is not needed at runtime. Licensed under the Apache
-License, Version 2.0 — see `vendor/licenses/APACHE-2.0.txt`.
+`vendor/gen-src` is generated from the wayland-protocols XML, so each file
+carries the protocol's copyright and permission notice inline. Copyright 2019
+Sebastian Wick; 2019 Erwin Burema; 2020 AMD; 2020–2024 Collabora Ltd.; 2024
+Xaver Hugl; 2022–2025 Red Hat Inc. The notice embedded in the generated files
+is the MIT license text; a copy is in
+[vendor/licenses/wayland-protocols-MIT.txt](vendor/licenses/wayland-protocols-MIT.txt).
 
-## SLF4J API 1.7.36 — MIT License
+Upstream: <https://gitlab.freedesktop.org/wayland/wayland-protocols>
 
-`vendor/libs/slf4j-api-1.7.36.jar`, from `org.slf4j:slf4j-api:1.7.36`.
-Required because `stubs-shared` logs through SLF4J. Copyright © 2004–2025
-QOS.ch. See `vendor/licenses/slf4j-MIT.txt`
-(source: <https://www.slf4j.org/license.html>).
+## Resolved from Maven — not redistributed here
 
----
+These are ordinary dependencies, fetched by the build and by consumers. Their
+licenses apply to whoever resolves them; no copy is shipped in this repository.
 
-`vendor/libs/` contains these unmodified Maven Central artifacts at the
-versions shown. Nothing else in this repository is derived from third-party
-code.
+| Coordinate | License |
+|---|---|
+| `org.slf4j:slf4j-api:1.7.36` | MIT |
+| `com.google.code.findbugs:jsr305:3.0.2` | Apache License 2.0 |
+
+NOTE: wayland-java itself is **not** on Maven Central (all coordinates 404), which
+is why its sources are vendored rather than referenced.

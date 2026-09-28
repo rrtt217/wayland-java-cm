@@ -1,0 +1,8 @@
+// Groovy DSL at the root.
+rootProject.name = 'wayland-java-cm'
+
+// vendor/wayland-lite is a normal library subproject; app is the demo.
+// consumer/ is deliberately NOT included: it stays a separate build, because
+// it exists to demonstrate consuming this repo from the outside.
+include 'vendor:wayland-lite'
+include 'app'

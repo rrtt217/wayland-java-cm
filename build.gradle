@@ -1,0 +1,58 @@
+// Groovy DSL root, Kotlin DSL subprojects.
+//
+// Gradle picks the DSL per script *file*, so the two can be mixed freely:
+// a Groovy root can configure Kotlin subprojects, and siblings can differ.
+// The one hard rule is that a single directory must not hold BOTH
+// build.gradle and build.gradle.kts -- there is no error and no warning,
+// Gradle just uses the Groovy one and silently ignores the other. Same for
+// settings.gradle vs settings.gradle.kts.
+plugins {
+    id 'base'
+}
+
+// Shared configuration applied to the Kotlin-DSL subprojects below.
+allprojects {
+    group = 'org.freedesktop.wayland'
+    // The vendored library resolves SLF4J and jsr305 from Maven; everything
+    // else it needs is source in this repository.
+    repositories {
+        mavenCentral()
+    }
+}
+
+tasks.register('verifyLicenses') {
+    group = 'verification'
+    description = 'Check that the redistribution paperwork is present'
+    def required = [
+            'LICENSE',
+            'NOTICE',
+            'THIRD_PARTY_NOTICES.md',
+            'vendor/licenses/APACHE-2.0.txt',
+            'vendor/licenses/wayland-protocols-MIT.txt',
+    ]
+    doLast {
+        def missing = required.findAll { !file(it).exists() }
+        if (missing) {
+            throw new GradleException("missing license files: ${missing.join(', ')}")
+        }
+        println "  all ${required.size()} license artefacts present"
+    }
+}
+
+tasks.register('vendorSummary') {
+    group = 'help'
+    description = 'Show what the vendored tree replaces'
+    doLast {
+        def count = { String dir -> fileTree(dir).matching { include '**/*.java' }.files.size() }
+        println "  jextract binding : ${count('vendor/slim/src')} source files (upstream: 145)"
+        println "  protocol stubs   : ${count('vendor/gen-src')} source files (188 generated, pruned to the reachable set)"
+        println "  wayland-java src : ${count('vendor/wayland-java-src')} source files"
+        println "  local jars       : ${fileTree('vendor').matching { include '**/*.jar' }.files.size()} (0 = everything is source or Maven)"
+    }
+}
+
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Build every subproject'
+    dependsOn ':vendor:wayland-lite:assemble', ':app:assemble'
+}

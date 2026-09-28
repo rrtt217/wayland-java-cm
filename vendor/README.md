@@ -1,87 +1,86 @@
 # vendor/ — how a new project depends on this
 
-Everything here is source + a few small jars. **No jextract, no Gradle plugin,
-no annotation processor, no pkg-config, no network** is needed to consume it.
+Everything here is **source**. No jextract, no annotation processor, no
+`pkg-config`, and no vendored jars.
 
 ```
 vendor/
-  wayland-lite/   the library project (see below) — this is what you depend on
-  slim/src/       13 .java  jextract output for libwayland + 6 libc calls
-  gen-src/        36 .java  protocol stubs: wayland.xml + staging color-management-v1
-  libs/           5 jars    stubs-shared, stubs-client, wayland-native.jar,
-                            slf4j-api, jsr305
-  proguard/       optional keep-rules (see the bottom of this file)
-  prune.py        regenerates the reachable-class list for gen-src
+  wayland-lite/       the library subproject — this is what you depend on
+  slim/src/           11 .java  jextract output for libwayland + 6 libc calls
+  gen-src/            36 .java  protocol stubs: wayland.xml + color-management-v1
+  wayland-java-src/   26 .java  the wayland-java runtime sources actually used
+  licenses/           third-party license texts
+  prune.py            recomputes the reachable set for gen-src
+  proguard/           optional keep-rules (see the bottom)
+  slim/regen.sh       regenerates slim/src from libwayland headers
 ```
 
-## Recommended: a composite build
+`vendorSummary` prints the current counts:
 
-`vendor/wayland-lite/build.gradle.kts` compiles `slim/src` + `gen-src` and
-exposes them as a normal `java-library` (`org.freedesktop.wayland:wayland-lite`).
-It does not copy the sources — the source set points at `../slim/src` and
-`../gen-src`, so there is exactly one copy in git.
+```
+$ ./gradlew vendorSummary
+  jextract binding : 11 source files (upstream: 145)
+  protocol stubs   : 36 source files (188 generated, pruned to the reachable set)
+  wayland-java src : 26 source files
+  local jars       : 0 (0 = everything is source or Maven)
+```
 
-New project, two files:
+## Consuming it
+
+`vendor/wayland-lite` is a plain `java-library` subproject, so inside this
+repository you just use the project path:
+
+```kotlin
+dependencies { implementation(project(":vendor:wayland-lite")) }
+```
+
+From **another** project, point at this repository and use the coordinates:
 
 ```kotlin
 // settings.gradle.kts
-includeBuild("../path/to/wayland_java_cm/vendor/wayland-lite")
+includeBuild("../path/to/wayland-java-cm")
 ```
-
 ```kotlin
-// build.gradle.kts
-plugins { application }
-java { toolchain { languageVersion.set(JavaLanguageVersion.of(25)) } }
-
-dependencies {
-    implementation("org.freedesktop.wayland:wayland-lite")
-}
-
-application {
-    mainClass.set("demo.Demo")
-    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
-}
+dependencies { implementation("org.freedesktop.wayland:wayland-lite") }
 ```
 
-That is the whole wiring. Gradle substitutes the coordinate for the included
-build, so nothing is published and no jar is committed twice.
+`consumer/` in this repository is exactly that, and is the working example.
 
-Verified:
-
-```
-$ gradle -p consumer run
-wl_display / wl_registry / wp_color_manager_v1 / PQ=11
-```
-
-Transitively you get `stubs-shared`, `stubs-client` and `slf4j-api`.
-`jsr305` is `compileOnly` inside the library and does **not** leak to consumers.
-FFM requires `--enable-native-access=ALL-UNNAMED` (or an `Enable-Native-Access`
-manifest entry).
-
-## Alternatives
-
-**Plain javac / any build system** — treat the five jars as an ordinary
-classpath and add the compiled output of `slim/src` + `gen-src`:
+Without Gradle, compile the three source dirs and put two Maven jars on the
+classpath:
 
 ```sh
-javac -d out -cp "vendor/libs/*" $(find vendor/slim/src vendor/gen-src -name '*.java')
-java --enable-native-access=ALL-UNNAMED -cp "out:vendor/libs/*" demo.Demo
+javac -d out $(find vendor/slim/src vendor/gen-src vendor/wayland-java-src -name '*.java')
+# runtime classpath: out + org.slf4j:slf4j-api:1.7.36
+# build-time only:   com.google.code.findbugs:jsr305:3.0.2
+java --enable-native-access=ALL-UNNAMED -cp "out:slf4j-api-1.7.36.jar" your.Main
 ```
 
-Note `vendor/libs/wayland-native.jar` is the *prebuilt* slim binding; if you
-compile `vendor/slim/src` yourself you can drop that jar. Committing the sources
-(and not the jar) is what makes the binding auditable and architecture
-independent — the layouts are resolved at runtime via
-`Linker.nativeLinker().canonicalLayouts()`, so the same sources work on
-x86_64/aarch64.
+## Why dependencies are source, not jars
 
-**Publish to a repo inside the tree** — if you prefer coordinates over
-`includeBuild`, run `gradle -p vendor/wayland-lite publish` with a
-`maven { url = uri("../vendor/repo") }` repository and commit `vendor/repo`.
-Composite build is simpler and keeps versions out of the picture.
+wayland-java is **not published on Maven Central** — every coordinate
+(`org.freedesktop.wayland:stubs-client`, `…:wayland-native`,
+`…:wayland-protocols`) returns 404 on both Central and Aliyun, and JitPack cannot
+build it because it needs jextract. So anything not vendored as source cannot be
+referenced at all.
 
-**Do not use `flatDir`** — it drops transitive dependencies, so you would have
-to list all five jars by hand at every call site.
+Everything else is a normal Maven coordinate: `slf4j-api` (needed by
+`stubs-shared`) and `jsr305` (only for the `javax.annotation.*` references in the
+generated sources, `compileOnly`).
+
+Two reductions make the vendored tree small:
+
+- **Only 23 Wayland functions are called.** `javap` over wayland-java's runtime
+  jars yields the full set, so jextract runs with an `--include-function`
+  allow-list: 145 classes / 1.6 MB → 11 source files.
+- **152 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
+  the closure from the app plus the runtime sources and drops the rest (data
+  device, input, shm, shell, subcompositor, …).
+
+Note that the `C` / `C_1` split upstream's jextract output needs is gone: it
+existed only to satisfy a reference in the *precompiled* stub jar. The vendored
+sources call `C.fcntl`, so `fcntl` is generated into `C` and `regen.sh` needs
+only two passes.
 
 ## Runtime requirements
 
@@ -89,26 +88,31 @@ to list all five jars by hand at every call site.
 |---|---|
 | JDK 22+ (we use 25) | FFM is final; the bindings use `canonicalLayouts()` |
 | `libwayland-client.so.0` | the actual Wayland client |
+| `--enable-native-access=ALL-UNNAMED` | FFM downcalls |
 
-One non-obvious trap: the binding resolves the library with
-`System.mapLibraryName("wayland-client")` → **`libwayland-client.so`**, i.e. the
-*unversioned* name. On a machine that has only the runtime package
-(`libwayland-client.so.0`) and not the `-dev` package with its `.so` symlink,
-loading fails even though Wayland itself works. Install `libwayland-dev` or
-create the symlink.
+One non-obvious trap: upstream's generated binding calls
+`SymbolLookup.libraryLookup(System.mapLibraryName("wayland-client"))`, which asks
+`dlopen` for the *unversioned* `libwayland-client.so`. That symlink ships in the
+`-dev` package, and `dlopen` has no soname fallback — it needs an exact filename
+match. A C shim records `DT_NEEDED: libwayland-client.so.0` and therefore only
+needs the runtime package. The vendored copy prefers the real soname and falls
+back, so it works with only the runtime package installed.
 
 ## Regenerating
 
-- `slim/src` — `vendor/slim/regen.sh` (documents the three jextract passes and
-  why the `C` / `C_1` split has to be forced).
-- `gen-src` — re-run the annotation processor, then `python3 vendor/prune.py`
-  to drop the unreachable protocol stubs (188 files → 36).
+- `vendor/slim/src` — `vendor/slim/regen.sh` (needs jextract 25 on `PATH`; the
+  script also re-applies the soname fix, with an assertion so a change in
+  jextract's output fails loudly).
+- `vendor/gen-src` — re-run the annotation processor from the `wayland-java`
+  submodule, then `python3 vendor/prune.py`.
+- `vendor/wayland-java-src` — copy `stubs-shared/src/main/java` and
+  `stubs-client/src/main/java` from the submodule.
 
 ## ProGuard (optional, and usually not worth it)
 
-`vendor/proguard/wcm.pro` shrinks an application jar. It works on Java 25, but
-only saves ~8% here (152 KB → 140 KB) because wayland-java's reflection and
-method-handle upcall sites force keeping the `raw` and `client` packages
-wholesale. The source-level pruning above is what actually removes the unused
-protocol stubs. Keep the rules around in case you need a slim release jar; read
-the comments in that file before changing them.
+`vendor/proguard/wcm.pro` shrinks an application jar. It works on Java 25 —
+provided it is paired with `proguard-core` 9.4.0; an older core misleadingly
+reports `Unsupported version number [69.0] (maximum 68.65535)`. It only saves
+~8% here (152 KB → 140 KB), because wayland-java's reflection and
+method-handle upcall sites force keeping the `client` and `raw` packages
+wholesale. The source pruning above is what actually removes the unused stubs.
