@@ -1,0 +1,14 @@
+# Gradle caches and build output (regenerable, hundreds of MB)
+.gradle/
+.gradle-home/
+build/
+
+# JVM crash dumps from the FFM experiments
+core.*
+hs_err_pid*.log
+replay_pid*.log
+
+# editors
+.idea/
+*.iml
+*.swp
