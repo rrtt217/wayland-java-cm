@@ -108,11 +108,43 @@ back, so it works with only the runtime package installed.
 - `vendor/wayland-java-src` — copy `stubs-shared/src/main/java` and
   `stubs-client/src/main/java` from the submodule.
 
-## ProGuard (optional, and usually not worth it)
+## ProGuard (optional)
 
-`vendor/proguard/wcm.pro` shrinks an application jar. It works on Java 25 —
-provided it is paired with `proguard-core` 9.4.0; an older core misleadingly
-reports `Unsupported version number [69.0] (maximum 68.65535)`. It only saves
-~8% here (152 KB → 140 KB), because wayland-java's reflection and
-method-handle upcall sites force keeping the `client` and `raw` packages
-wholesale. The source pruning above is what actually removes the unused stubs.
+`vendor/proguard/wcm.pro` shrinks an application jar. Its first rule is a hard
+boundary: **nothing outside `org.freedesktop.wayland.*` may be removed**, so the
+application and any other input classes survive verbatim.
+
+It does work on Java 25 — provided it is paired with `proguard-core` 9.4.0. An
+older core misleadingly reports
+`Unsupported version number [69.0] (maximum 68.65535)` and looks like ProGuard
+cannot read Java 25 class files at all.
+
+Measured on this repository:
+
+| | |
+|---|---|
+| input | `app.jar` + `wayland-lite.jar`, 120 classes, 156 KB |
+| output | 95 classes, 108 KB |
+| removed | 25, **all** under `org.freedesktop.wayland.` |
+| verified | hdr10 / scrgb / p3 / none all still apply |
+
+What actually goes: the unused EGL helper, the compile-time-only annotation
+classes, `ShmPool`/`ShmUtil`, the libc invokers (`C$mmap`, `C$fcntl`, …), and
+the unused `LibWayland$…` holder classes. The 8% jar-size saving is real but
+modest — the source-level pruning in `vendor/prune.py` is what removes bulk.
+
+Two keep rules are easy to get wrong, and both fail with a misleading message:
+
+- **the enum package must be kept whole.** `EnumUtil.buildEnumMap` calls
+  `getEnumConstants()`; keeping only `getValue()` lets ProGuard strip the
+  constants and `values()`, and the enum's static initialiser then dies with
+  `ExceptionInInitializerError` caused by
+  `NullPointerException: Cannot read the array length because "<local4>" is null`;
+- **`org.freedesktop.wayland.raw`'s interfaces must be kept.** libwayland's
+  dispatcher is installed as an upcall via
+  `MethodHandles.lookup().findVirtual(...)`, which no static analysis sees.
+  Losing it surfaces as wayland-java's generic
+  `RuntimeException: "Uh oh, this is a bug!"`.
+
+The rules are not exercised by CI; re-run them by hand if you change the
+dependency versions.

@@ -8,6 +8,9 @@ core.*
 hs_err_pid*.log
 replay_pid*.log
 
+# scratch: ProGuard toolchain + JDK modules extracted for -libraryjars
+vendor/tools/
+
 # editors
 .idea/
 *.iml
