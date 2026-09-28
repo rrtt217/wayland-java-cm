@@ -50,9 +50,11 @@ for f in close ftruncate mkstemp mmap munmap fcntl; do set -- "$@" --include-fun
 
 echo "generated $(find "$OUT" -name '*.java' | wc -l) files in $OUT"
 
-# ---- compile to a jar ------------------------------------------------------
-# "${JAVA_HOME?}/bin/javac" -d classes $(find "$OUT" -name '*.java')
-# (cd classes && "$JAVA_HOME/bin/jar" cf ../libs/wayland-native.jar .)
+# ---- compiling -------------------------------------------------------------
+# Do not compile in place: this directory is source-only, and the build compiles
+# $OUT through vendor/wayland-lite. If you need the classes for a manual javac
+# run, send them to a throwaway directory:
+#   "${JAVA_HOME?}/bin/javac" -d /tmp/slim-classes $(find "$OUT" -name '*.java')
 
 # ---- POST-PROCESS (required, do not skip) ----------------------------------
 # Upstream jextract emits dlopen("libwayland-client.so") (the unversioned name,
