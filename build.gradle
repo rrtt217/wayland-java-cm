@@ -47,7 +47,9 @@ tasks.register('vendorSummary') {
         println "  jextract binding : ${count('vendor/slim/src')} source files (upstream: 145)"
         println "  protocol stubs   : ${count('vendor/gen-src')} source files (188 generated, pruned to the reachable set)"
         println "  wayland-java src : ${count('vendor/wayland-java-src')} source files"
-        println "  local jars       : ${fileTree('vendor').matching { include '**/*.jar' }.files.size()} (0 = everything is source or Maven)"
+        def vendoredJars = fileTree('vendor') { exclude '**/build/**' }
+                .matching { include '**/*.jar' }.files.size()
+        println "  vendored jars    : ${vendoredJars} (build output excluded; 0 = everything is source or Maven)"
     }
 }
 
