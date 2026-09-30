@@ -101,6 +101,9 @@ the two runtime traps.
 that re-vendoring is reproducible, and because two small patches live in the
 fork rather than in `vendor/`:
 
+- `bb9b048` — rebuild `wl_message.types` against the signature, so
+  `WAYLAND_DEBUG=1` stops crashing libwayland. The vendored copy under
+  `vendor/wayland-java-src/` carries the same fix, which is what actually builds
 - `3f03bbd` — target JDK 25 instead of 22 (upstream pins 22, which cannot be
   resolved on a machine that has only 21 and 25)
 - `ccf9839` — fetch the Gradle distribution from a mirror (separable; revert it
