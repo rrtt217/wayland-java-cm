@@ -131,7 +131,8 @@ older core misleadingly reports
 `Unsupported version number [69.0] (maximum 68.65535)` and looks like ProGuard
 cannot read Java 25 class files at all.
 
-Measured on this repository:
+Measured on this repository (before the colour-management enums were restored
+to `vendor/gen-src`, so the input is now larger — re-measure before quoting):
 
 | | |
 |---|---|
