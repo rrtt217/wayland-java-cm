@@ -11,14 +11,17 @@ def mentions(t):
     return {n for n, p in pat.items() if p.search(t)}
 refs = {n: mentions(open(p, encoding='utf-8', errors='ignore').read()) for n, p in files.items()}
 
+# Roots are the code that consumes the generated stubs: the application and the
+# vendored wayland-java runtime sources. (This used to read two jars under
+# vendor/libs/, which no longer exist now that the runtime is vendored as
+# source -- the unzip silently produced nothing and pruning ran with the
+# runtime's references missing entirely.)
 roots = set()
-for r, _, fs in os.walk('app/src/main/java'):
-    for f in fs:
-        if f.endswith('.java'):
-            roots |= mentions(open(os.path.join(r, f)).read())
-for jar in ['stubs-client', 'stubs-shared']:
-    blob = subprocess.run(['unzip', '-p', 'vendor/libs/%s.jar' % jar], capture_output=True).stdout
-    roots |= mentions(blob.decode('latin-1'))
+for source_root in ('app/src/main/java', 'vendor/wayland-java-src'):
+    for r, _, fs in os.walk(source_root):
+        for f in fs:
+            if f.endswith('.java'):
+                roots |= mentions(open(os.path.join(r, f)).read())
 
 print('generated classes:', len(names))
 print('roots from app+runtime:', len(roots))

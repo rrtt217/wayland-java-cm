@@ -20,7 +20,7 @@ vendor/
 ```
 $ ./gradlew vendorSummary
   jextract binding : 11 source files (upstream: 145)
-  protocol stubs   : 79 source files (188 generated, pruned to the reachable set)
+  protocol stubs   : 79 source files (197 generated, pruned to the reachable set)
   wayland-java src : 26 source files
   local jars       : 0 (0 = everything is source or Maven)
 ```
@@ -73,7 +73,7 @@ Two reductions make the vendored tree small:
 - **Only 23 Wayland functions are called.** `javap` over wayland-java's runtime
   jars yields the full set, so jextract runs with an `--include-function`
   allow-list: 145 classes / 1.6 MB → 11 source files.
-- **109 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
+- **118 of the 197 protocol stubs are unreachable.** `vendor/prune.py` computes
   the closure from the app plus the runtime sources and drops the rest (data
   device, input, shm, shell, subcompositor, …). It runs in place and owns the
   state of `gen-src`; run it after re-running the annotation processor.
@@ -106,6 +106,24 @@ needs the runtime package. The vendored copy prefers the real soname and falls
 back, so it works with only the runtime package installed.
 
 ## Regenerating
+
+> **The generated stubs are not pinned to a protocol version.** The annotation
+> processor resolves the XML through `pkg-config`, so `wayland.xml` comes from
+> whatever `libwayland` happens to be installed:
+>
+> | XML | source | sha256 |
+> |---|---|---|
+> | `wayland.xml` | `/usr/share/wayland/`, from libwayland **1.26.0** | `cc860987…` |
+> | `color-management-v1.xml` | `/usr/share/wayland-protocols/` 1.49 | `18a2678e…` |
+>
+> This bit during development: libwayland was upgraded from 1.25.0 to 1.26.0,
+> the next regeneration emitted 197 files instead of 188 and changed the
+> `wl_display.delete_id` prose. Only javadoc text moved, and the reachable set
+> stayed identical, but a re-vendor can silently pick up protocol changes.
+> Pinning the XMLs into `vendor/xml/` is the durable fix (the sibling
+> `wayland_color_management` project already vendors the colour-management XML
+> for this reason); the hashes above are what the current `gen-src` came from.
+
 
 - `vendor/slim/src` — `vendor/slim/regen.sh` (needs jextract 25 on `PATH`; the
   script also re-applies the soname fix, with an assertion so a change in

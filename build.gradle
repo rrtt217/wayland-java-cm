@@ -45,7 +45,7 @@ tasks.register('vendorSummary') {
     doLast {
         def count = { String dir -> fileTree(dir).matching { include '**/*.java' }.files.size() }
         println "  jextract binding : ${count('vendor/slim/src')} source files (upstream: 145)"
-        println "  protocol stubs   : ${count('vendor/gen-src')} source files (188 generated, pruned to the reachable set)"
+        println "  protocol stubs   : ${count('vendor/gen-src')} source files (197 generated, pruned to the reachable set)"
         println "  wayland-java src : ${count('vendor/wayland-java-src')} source files"
         def vendoredJars = fileTree('vendor') { exclude '**/build/**' }
                 .matching { include '**/*.jar' }.files.size()

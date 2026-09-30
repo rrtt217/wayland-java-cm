@@ -67,7 +67,7 @@ manager.
 | | upstream | vendored |
 |---|---|---|
 | jextract binding | 1449 classes / 1.6 MB | **11 source files** |
-| protocol stubs | 188 files / 1.3 MB | **79 source files** |
+| protocol stubs | 197 files / 1.4 MB | **79 source files** |
 | runtime sources | 3 published modules | **26 source files** |
 | build needs | jextract, Gradle, pkg-config, `wayland-protocols` | **a JDK and two Maven jars** |
 
@@ -77,7 +77,7 @@ Two things make this possible:
   runtime jars yields the full set, so jextract is re-run with an
   `--include-function` allow-list. `vendor/slim/regen.sh` records the three
   passes and explains why `C` and `C_1` have to be generated separately.
-- **109 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
+- **118 of the 197 protocol stubs are unreachable.** `vendor/prune.py` computes
   the closure from the app plus the runtime jars and drops the rest (data
   device, input, shm, shell, subcompositor, ...).
 

@@ -21,7 +21,7 @@ License, Version 2.0 — see [LICENSE](LICENSE).
 
 **These copies are modified** with respect to upstream, as required to be stated
 by Apache-2.0 §4(b): the jextract bindings are regenerated against an allow-list
-of 23 functions, the generated protocol stubs are pruned from 188 files to 79,
+of 23 functions, the generated protocol stubs are pruned from 197 files to 79,
 `LibWayland.java` resolves the versioned `libwayland-client.so.0` soname instead
 of the unversioned name, and `MessageMeta.java` rebuilds `wl_message.types`
 against the message signature rather than copying `@Message.types` verbatim
