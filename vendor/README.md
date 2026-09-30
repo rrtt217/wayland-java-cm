@@ -8,7 +8,7 @@ vendor/
   wayland-lite/       the library subproject — this is what you depend on
   slim/src/           11 .java  jextract output for libwayland + 6 libc calls
   gen-src/            79 .java  protocol stubs: wayland.xml + color-management-v1
-  wayland-java-src/   26 .java  the wayland-java runtime sources actually used
+  wayland-java-src/   26 .java  wayland-java runtime sources, one file modified
   licenses/           third-party license texts
   prune.py            recomputes the reachable set for gen-src
   proguard/           optional keep-rules (see the bottom)
@@ -115,7 +115,10 @@ back, so it works with only the runtime package installed.
   `wayland.xml` and `staging/color-management/color-management-v1.xml`), copy the
   generated tree in, then `python3 vendor/prune.py`.
 - `vendor/wayland-java-src` — copy `stubs-shared/src/main/java` and
-  `stubs-client/src/main/java` from the submodule.
+  `stubs-client/src/main/java` from the submodule. The submodule is pinned to
+  our fork, which already carries the `MessageMeta` fix, so a fresh copy comes
+  out correct; check `git -C wayland-java log --oneline` before copying and do
+  not reintroduce the bug by copying from upstream directly.
 
 ## ProGuard (optional)
 

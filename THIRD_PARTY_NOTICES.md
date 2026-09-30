@@ -12,7 +12,8 @@ Redistributed in two forms:
 - as **source**, under `vendor/`:
   - `vendor/slim/src` — its jextract output, regenerated with a reduced symbol set;
   - `vendor/gen-src` — its generated protocol stubs, pruned to the reachable set;
-  - `vendor/wayland-java-src/{shared,client}` — the runtime sources actually used.
+  - `vendor/wayland-java-src/{shared,client}` — the runtime sources actually used
+    (one of them, `MessageMeta.java`, carries our fix — see below).
 
 Upstream: <https://github.com/Ramblurr/wayland-java>
 Copyright © 2015 Erik De Rijcke; © 2024 Casey Link. Licensed under the Apache
@@ -20,8 +21,10 @@ License, Version 2.0 — see [LICENSE](LICENSE).
 
 **These copies are modified** with respect to upstream, as required to be stated
 by Apache-2.0 §4(b): the jextract bindings are regenerated against an allow-list
-of 23 functions, the generated protocol stubs are pruned from 188 files to 36,
-and `LibWayland.java` resolves the versioned `libwayland-client.so.0` soname
+of 23 functions, the generated protocol stubs are pruned from 188 files to 79,
+`LibWayland.java` resolves the versioned `libwayland-client.so.0` soname instead
+of the unversioned name, and `MessageMeta.java` rebuilds `wl_message.types`
+against the message signature rather than copying `@Message.types` verbatim
 instead of the unversioned name. See [vendor/README.md](vendor/README.md) and
 `vendor/slim/regen.sh`.
 

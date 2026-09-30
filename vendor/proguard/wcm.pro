@@ -16,7 +16,11 @@
 -dontwarn
 -dontnote
 
-# InterfaceMeta reads @Interface / @Message at runtime.
+# InterfaceMeta reads @Interface / @Message at runtime, and MessageMeta filters
+# argument types with isAnnotationPresent(Interface.class). Dropping
+# RuntimeVisibleAnnotations therefore does not merely lose metadata: every
+# wl_message.types entry would become NULL, breaking object and new_id
+# arguments. Keep this line whatever else changes.
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault,Signature,InnerClasses,EnclosingMethod
 
 # ---------------------------------------------------------------------------

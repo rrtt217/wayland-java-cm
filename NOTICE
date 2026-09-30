@@ -7,9 +7,10 @@ Copyright 2024 Casey Link, licensed under the Apache License, Version 2.0.
 
   The wayland-java code redistributed here is MODIFIED with respect to
   upstream: the jextract bindings are regenerated with a reduced symbol set,
-  the generated protocol stubs are pruned to the reachable set, and
-  LibWayland.java resolves the versioned libwayland-client soname. See
-  THIRD_PARTY_NOTICES.md and vendor/README.md.
+  the generated protocol stubs are pruned to the reachable set,
+  LibWayland.java resolves the versioned libwayland-client soname, and
+  MessageMeta.java rebuilds wl_message.types against the message signature.
+  See THIRD_PARTY_NOTICES.md and vendor/README.md.
 
 This product includes protocol bindings generated from wayland-protocols
 (https://gitlab.freedesktop.org/wayland/wayland-protocols), Copyright 2019

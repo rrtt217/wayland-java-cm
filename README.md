@@ -77,7 +77,7 @@ Two things make this possible:
   runtime jars yields the full set, so jextract is re-run with an
   `--include-function` allow-list. `vendor/slim/regen.sh` records the three
   passes and explains why `C` and `C_1` have to be generated separately.
-- **152 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
+- **109 of the 188 protocol stubs are unreachable.** `vendor/prune.py` computes
   the closure from the app plus the runtime jars and drops the rest (data
   device, input, shm, shell, subcompositor, ...).
 
@@ -126,8 +126,17 @@ records `DT_NEEDED: libwayland-client.so.0` and therefore only needs the runtime
 package. Our vendored copy prefers the real soname and falls back, so it works
 with only the runtime package installed.
 
-**Two bugs that cost real time**, both of which produced wildly misleading
+**Three bugs that cost real time**, all of which produced wildly misleading
 symptoms:
+
+- **`WAYLAND_DEBUG=1` crashed the JVM inside libwayland.** wayland-java copied
+  `@Message.types` straight into `wl_message.types`, but libwayland requires one
+  NULL-padded entry per argument, so the debug printer dereferenced
+  out-of-bounds memory — while normal marshalling never reads those slots, which
+  is why it only ever failed with debugging on. The fix is in
+  `vendor/wayland-java-src/` and on the fork as `bb9b048`; the C shim, which uses
+  `wayland-scanner` metadata, was never affected. A useful reminder that a crash
+  *inside* a C library is not necessarily the C library's fault.
 
 - `poll(fds, nfds, timeout)` with the timeout passed as `nfds`. The kernel then
   writes `revents` for N pollfds into an 8-byte buffer. The corruption surfaced
@@ -135,9 +144,11 @@ symptoms:
 - ProGuard cannot be used the way you would hope here: wayland-java resolves its
   proxy constructors reflectively and installs the libwayland dispatcher as an
   **upcall** via `MethodHandles.lookup().findVirtual(...)`. Keeping those alive
-  means keeping the `client` and `raw` packages wholesale, which leaves ProGuard
-  removing ~8% (152 KB → 140 KB) while the source-level pruning above removes
-  80%. Rules are kept in `vendor/proguard/wcm.pro` for reference.
+  means keeping the `client`, `raw`, `shared` and `util` packages essentially
+  wholesale, so ProGuard removes only a modest amount — the source-level pruning
+  above is what removes the bulk. The rules are kept in
+  `vendor/proguard/wcm.pro`, with the measurement in `vendor/README.md`; neither
+  is exercised by CI, so re-measure before quoting figures.
 
 **ProGuard does support Java 25** (class file v69) as of 7.10.0 — provided you
 pair it with `proguard-core` 9.4.0. An older core reports a misleading
